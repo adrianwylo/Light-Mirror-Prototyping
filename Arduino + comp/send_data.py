@@ -25,7 +25,7 @@ def change_col(pixels, frame, dictionary, b, a):
     for y in range(b):
             for x in range(a):
                 b, g, r = frame[int(y), int(x)]
-                pixels[dictionary[(y,x)]] = (int(r), int(g), int(b))
+                pixels[dictionary[(y,x)]] = [int(r), int(g), int(b)]
 
 def serialize_pix(pixels): 
     try:
@@ -42,17 +42,17 @@ def main():
     panel_size = 16
     cam_index = 0
     NUM_PIXELS = x * y
-    pixels = [0] * NUM_PIXELS 
+    pixels = [0] * NUM_PIXELS
 
     # Open the video capture
-    cap = cv2.VideoCapture(0) 
+    cap = cv2.VideoCapture(cam_index) 
 
     #Create Mapping
     my_dictionary = {}
     create_mapping(my_dictionary, y, x, panel_size)
 
      # Configure the serial communication parameters
-    arduino_port = '/dev/ttyUSB0'  # Replace with the appropriate port name on your system
+    arduino_port = '/dev/ttyACM0'  # Replace with the appropriate port name on your system
     baud_rate = 9600
     ser = serial.Serial(arduino_port, baud_rate)
     time.sleep(2)  # Allow time for the connection to establish
@@ -75,6 +75,7 @@ def main():
         # Check for the 'q' key to quit
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        print("sent")
 
     # Release the video capture and close the windows
     cap.release()

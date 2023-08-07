@@ -1,7 +1,7 @@
-#include <ArduinoMsgPack.h>
+#include <MsgPack.h>
 #include <FastLED.h>
 
-#define NUM_PIXELS 64 * 32 // Adjust this according to the size of your LED strip
+#define NUM_PIXELS 64 * 32
 #define BUFFER_SIZE 256
 #define LED_PIN     6
 
@@ -9,33 +9,29 @@ CRGB leds[NUM_PIXELS];
 uint8_t buffer[BUFFER_SIZE];
 
 void setup() {
-  Serial.begin(9600); // Initialize serial communication at 9600 bps
+  // Initialize serial communication at 9600 bps
+  Serial.begin(9600);
+  
   FastLED.addLeds<NEOPIXEL, LED_PIN>(leds, NUM_PIXELS);
   FastLED.show(); // Initialize all LEDs to off(black)
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    size_t bytesRead = Serial.readBytes(buffer, BUFFER_SIZE);
-    // Deserialize the received data
-    MsgPack::Reader reader;
-    MsgPack::Object object;
-    if (reader.parse(buffer, bytesRead, &object)) {
-      // Check if the deserialized data is an array
-      if (object.isArray()) {
-        // Loop through the array and access the individual elements
-        for (size_t pos = 0; pos < object.arraySize(); pos++) {
-          MsgPack::Object tuple = object[pos];
-          // Check if the tuple contains three elements (assuming it's an array of tuples)
-          if (tuple.isArray() && tuple.arraySize() == 3) {
-            uint8_t r = tuple[0].asInt();
-            uint8_t g = tuple[1].asInt();
-            uint8_t b = tuple[2].asInt();
-            leds[pos] = CRGB(r, g, b);
-            FastLED.show();
-          }
-        }
-      }
+  // Check if there is a complete set of data available on the serial port
+  if (Serial.available() >= BUFFER_SIZE) {
+    // Read the data into the buffer
+    Serial.readBytes(buffer, BUFFER_SIZE);
+
+    // Parse the serialized data and update the leds array
+    for (int i = 0; i < NUM_PIXELS; i++) {
+      int offset = i * 3; // Each LED has 3 bytes (R, G, B)
+      uint8_t r = buffer[offset];
+      uint8_t g = buffer[offset + 1];
+      uint8_t b = buffer[offset + 2];
+      leds[i] = CRGB(r, g, b);
     }
+
+    // Show the updated LEDs
+    FastLED.show();
   }
 }
