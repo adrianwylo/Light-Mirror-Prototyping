@@ -1,15 +1,13 @@
 import cv2
 import board
 import neopixel
-import numpy as np
 
-def shift_led_image(c_dic, p_dic, b, a):
+def shift_led_image(c_dic, position, b, a):
     for y in range(b):
             for x in range(a):
                 total_steps = 100 #changeable
-                interpolate_color(dictionary)
                 for step in range(total_steps + 1):
-                    pixels[p_dic[(y,x)]] = interpolate_color(c_dic[(y,x)][0], c_dic[(y,x)][1], step, total_steps)
+                    pixels[position] = interpolate_color(c_dic[(y,x)][0], c_dic[(y,x)][1], step, total_steps)
                     pixels.show()
 
 # Function to interpolate between two colors
@@ -63,7 +61,7 @@ cap = cv2.VideoCapture(0)
 #Create Mapping
 pos_dictionary = {}
 col_dictionary = {}
-create_mapping(my_dictionary, col_dictionary y, x, panel_size)
+create_mapping(pos_dictionary, col_dictionary, y, x, panel_size)
 
 #Camera Loop
 while True:
@@ -75,8 +73,8 @@ while True:
     frame = cv2.resize(frame, (x, y))
 
     update_next_colors(frame, col_dictionary, y, x)
-
-    shift_led_image(col_dictionary, pos_dictionary, y, x)
+    position = pos_dictionary[(y,x)]
+    shift_led_image(col_dictionary, position, y, x)
 
     # Check for the 'q' key to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
