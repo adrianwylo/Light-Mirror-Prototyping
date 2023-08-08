@@ -2,16 +2,16 @@ import cv2
 import board
 import neopixel
 
-def shift_led_image(c_dic, position, b, a):
-    for y in range(b):
-            for x in range(a):
-                total_steps = 100 #changeable
-                for step in range(total_steps + 1):
-                    pixels[position] = interpolate_color(c_dic[(y,x)][0], c_dic[(y,x)][1], step, total_steps)
-                    pixels.show()
+def shift_led_image(c_dic, p_dic, b, a):
+    total_steps = 20 #changeable
+    for step in range(total_steps + 1):
+        for y in range(b):
+                for x in range(a):
+                    pixels[p_dic[(y,x)]] = interpolate_color(c_dic[(y,x)][0], c_dic[(y,x)][1], step, total_steps)
+        pixels.show()
 
 # Function to interpolate between two colors
-def interpolate_color(color1, color2, step, total_steps):
+def interpolate_color(color2, color1, step, total_steps):
     r1, g1, b1 = color1
     r2, g2, b2 = color2
     new_r = int(r1 + (step * (r2 - r1) / total_steps))
@@ -23,7 +23,7 @@ def update_next_colors(frame, c_dic, b, a):
     for y in range(b):
             for x in range(a):
                 b, g, r = frame[int(y), int(x)]
-                c_dic[(y,x)] = ((c_dic[(y,x)][0][0], c_dic[(y,x)][0][1], c_dic[(y,x)][0][2]),(int(r), int(g), int(b)))
+                c_dic[(y,x)] = ((int(r), int(g), int(b)), (c_dic[(y,x)][0][0], c_dic[(y,x)][0][1], c_dic[(y,x)][0][2]))
             
 
 def create_mapping(my_dictionary, my_c_dictionary, b, a, panel_size):
@@ -71,11 +71,8 @@ while True:
         print("you messed up")
         break
     frame = cv2.resize(frame, (x, y))
-
     update_next_colors(frame, col_dictionary, y, x)
-    position = pos_dictionary[(y,x)]
-    shift_led_image(col_dictionary, position, y, x)
-
+    shift_led_image(col_dictionary, pos_dictionary, y, x)
     # Check for the 'q' key to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
