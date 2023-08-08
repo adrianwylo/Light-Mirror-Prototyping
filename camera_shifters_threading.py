@@ -3,31 +3,104 @@ import board
 import neopixel
 import threading
 
-# Your existing functions
+class LedController:
+    def __init__(self, x, y, panel_size, cam_index):
+        self.x = x
+        self.y = y
+        self.panel_size = panel_size
+        self.cam_index = cam_index
+        self.NUM_PIXELS = x * y
+        self.PIN = board.D18
+        self.pixels = neopixel.NeoPixel(self.PIN, self.NUM_PIXELS, brightness=0.2, auto_write=False)
+        
+        self.cap = cv2.VideoCapture(self.cam_index)
+        
+        self.pos_dictionary = {}
+        self.col_dictionary = {}
+        self.cap_dictionary = {}
+        
+        self.create_mapping()
+        
+        self.camera_ready = threading.Event()
+        self.led_ready = threading.Event()
+        
+        self.camera_thread = threading.Thread(target=self.camera_thread_function)
+        self.led_thread = threading.Thread(target=self.led_thread_function)
+        
+        self.camera_thread.start()
+        self.led_thread.start()
+        
+    def create_mapping(self):
+        for y in range(self.y):
+            for x in range(self.x):
+                y_panel = int(y // self.panel_size)
+                x_panel = int(x // self.panel_size)
+                base_pixel = x_panel * (self.panel_size ** 2) * 2 + y_panel * (self.panel_size ** 2)
+                y_panel_offset = y % self.panel_size
+                x_panel_offset = x % self.panel_size
+                if x_panel_offset % 2 == 0:
+                    offset_amount = x_panel_offset * self.panel_size + y_panel_offset
+                else:
+                    offset_amount = (x_panel_offset + 1) * self.panel_size - 1 - y_panel_offset
+                pixel_index = base_pixel + offset_amount
+                
+                self.pos_dictionary[(y, x)] = pixel_index
+                self.col_dictionary[(y, x)] = ((0, 0, 0), (0, 0, 0))
+                self.cap_dictionary[(y, x)] = (0, 0, 0)
+        
+    def camera_thread_function(self):
+        while True:
+            ret, frame = self.cap.read()
+            if not ret:
+                print("Error capturing frame")
+                break
+            frame = cv2.resize(frame, (self.x, self.y))
+            self.capture_colors(frame)
+            self.camera_ready.set()
+            self.led_ready.wait()
+            self.camera_ready.clear()
+            
+    def led_thread_function(self):
+        while True:
+            self.camera_ready.wait()
+            self.update_next_colors()
+            self.shift_led_image()
+            self.led_ready.set()
 
-# ...
+    def capture_colors(self, frame):
+        for y in range(self.y):
+            for x in range(self.x):
+                b, g, r = frame[int(y), int(x)]
+                self.cap_dictionary[(y, x)] = (int(r), int(g), int(b))
+                
+    def update_next_colors(self):
+        for y in range(self.y):
+            for x in range(self.x):
+                self.col_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_dictionary[(y, x)][0])
+    
+    def shift_led_image(self):
+        total_steps = 20  # Changeable
+        for step in range(total_steps + 1):
+            for y in range(self.y):
+                for x in range(self.x):
+                    self.pixels[self.pos_dictionary[(y, x)]] = self.interpolate_color(self.col_dictionary[(y, x)][0], self.col_dictionary[(y, x)][1], step, total_steps)
+            self.pixels.show()
+    
+    def interpolate_color(self, color2, color1, step, total_steps):
+        r1, g1, b1 = color1
+        r2, g2, b2 = color2
+        new_r = int(r1 + (step * (r2 - r1) / total_steps))
+        new_g = int(g1 + (step * (g2 - g1) / total_steps))
+        new_b = int(b1 + (step * (b2 - b1) / total_steps))
+        return new_r, new_g, new_b
 
-# Create threading events
-camera_ready = threading.Event()
-led_ready = threading.Event()
-
-def camera_thread():
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("you messed up")
-            break
-        frame = cv2.resize(frame, (x, y))
-        update_next_colors(frame, col_dictionary, y, x)
-        camera_ready.set()  # Signal that the camera thread is ready
-        led_ready.wait()    # Wait for the LED thread to be ready
-        camera_ready.clear()
-
-def led_thread():
-    while True:
-        camera_ready.wait()  # Wait for the camera thread to be ready
-        shift_led_image(col_dictionary, pos_dictionary, y, x)
-        led_ready.set()      # Signal that the LED thread is ready
+    def run(self):
+        self.camera_thread.join()
+        self.led_thread.join()
+        self.cap.release()
+        cv2.destroyAllWindows()
+        self.pixels.fill((0, 0, 0))
+        self.pixels.show()
 
 # Variables
 x = 64
@@ -35,33 +108,5 @@ y = 32
 panel_size = 16
 cam_index = 0
 
-# Initialize the NeoPixel object
-NUM_PIXELS = x * y
-PIN = board.D18  # Choose the appropriate GPIO pin for your setup
-pixels = neopixel.NeoPixel(PIN, NUM_PIXELS, brightness=0.2, auto_write=False)
-
-# Open the video capture
-cap = cv2.VideoCapture(cam_index)
-
-# Create Mapping
-pos_dictionary = {}
-col_dictionary = {}
-create_mapping(pos_dictionary, col_dictionary, y, x, panel_size)
-
-# Create and start the camera and LED threads
-camera_thread = threading.Thread(target=camera_thread)
-led_thread = threading.Thread(target=led_thread)
-
-camera_thread.start()
-led_thread.start()
-
-# Wait for both threads to finish
-camera_thread.join()
-led_thread.join()
-
-# Release the video capture and close the windows
-cap.release()
-cv2.destroyAllWindows()
-# Turn off the LED at the end
-pixels.fill((0, 0, 0))
-pixels.show()
+led_controller = LedController(x, y, panel_size, cam_index)
+led_controller.run()
