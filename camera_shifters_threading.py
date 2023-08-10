@@ -2,6 +2,7 @@ import cv2
 import board
 import neopixel
 import threading
+import time
 
 class LedController:
     def __init__(self, x, y, panel_size, cam_index):
@@ -50,6 +51,8 @@ class LedController:
         
     def camera_thread_function(self):
         while True:
+            #add wait time
+            time.sleep(120)
             ret, frame = self.cap.read()
             if not ret:
                 print("Error capturing frame")
@@ -79,7 +82,7 @@ class LedController:
                 self.col_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_dictionary[(y, x)][0])
     
     def shift_led_image(self):
-        total_steps = 20  # Changeable
+        total_steps = 5  # Changeable
         for step in range(total_steps + 1):
             for y in range(self.y):
                 for x in range(self.x):
