@@ -67,8 +67,9 @@ class LedController:
         while True:
             self.camera_ready.wait()
             self.update_next_colors()
-            self.shift_led_image()
             self.led_ready.set()
+            self.shift_led_image()
+            
 
     def capture_colors(self, frame):
         for y in range(self.y):

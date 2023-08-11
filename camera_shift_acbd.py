@@ -1,28 +1,27 @@
 import cv2
+import board
+import neopixel
 import threading
 import time
-from rpi_ws281x import PixelStrip, Color
 
 class LedController:
-    def __init__(self, x, y, panel_size, cam_index):
+    def __init__(self, x, y, panel_size, cam_index, steps):
         self.x = x
         self.y = y
+        self.total_steps = steps
+        self.camcount = -1
+        self.showcount = 1
         self.panel_size = panel_size
         self.cam_index = cam_index
         self.NUM_PIXELS = x * y
-        self.PIN = 18
-        self.LED_FREQ_HZ = 800000
-        self.LED_DMA = 10
-        self.LED_INVERT = False
-        
-        # Initialize the WS2815 LED strip
-        self.strip = PixelStrip(self.NUM_PIXELS, self.PIN, freq_hz=self.LED_FREQ_HZ, dma=self.LED_DMA, invert=self.LED_INVERT, brightness=255)
-        self.strip.begin()
+        self.PIN = board.D18
+        self.pixels = neopixel.NeoPixel(self.PIN, self.NUM_PIXELS, brightness=0.2, auto_write=False)
         
         self.cap = cv2.VideoCapture(self.cam_index)
         
         self.pos_dictionary = {}
-        self.col_dictionary = {}
+        self.col_ac_dictionary = {}
+        self.col_bd_dictionary = {}
         self.cap_dictionary = {}
         
         self.create_mapping()
@@ -41,6 +40,9 @@ class LedController:
             for x in range(self.x):
                 y_panel = int(y // self.panel_size)
                 x_panel = int(x // self.panel_size)
+        #takin da picture (a)
+
+        
                 base_pixel = x_panel * (self.panel_size ** 2) * 2 + y_panel * (self.panel_size ** 2)
                 y_panel_offset = y % self.panel_size
                 x_panel_offset = x % self.panel_size
@@ -51,13 +53,24 @@ class LedController:
                 pixel_index = base_pixel + offset_amount
                 
                 self.pos_dictionary[(y, x)] = pixel_index
-                self.col_dictionary[(y, x)] = ((0, 0, 0), (0, 0, 0))
+                self.col_ac_dictionary[(y, x)] = ((0, 0, 0), (0, 0, 0))
+                self.col_bd_dictionary[(y, x)] = ((0, 0, 0), (0, 0, 0))
                 self.cap_dictionary[(y, x)] = (0, 0, 0)
         
     def camera_thread_function(self):
+        #takin da picture (b)
+        ret, frame = self.cap.read()
+        if not ret:
+            print("Error capturing frame (initial)")
+        frame = cv2.resize(frame, (self.x, self.y))
+        self.capture_colors(frame)
+        #do this twice to file up bd_dic with a copied frame
+        self.update_next_colors()
+        self.update_next_colors()
+        #waiting moment lol
         while True:
-            #add wait time
-            time.sleep(120)
+            self.camcount *= -1
+            #takin da picture (c) and do da rest
             ret, frame = self.cap.read()
             if not ret:
                 print("Error capturing frame")
@@ -74,6 +87,7 @@ class LedController:
             self.update_next_colors()
             self.led_ready.set()
             self.shift_led_image()
+            self.showcount*=-1
             
 
     def capture_colors(self, frame):
@@ -85,17 +99,26 @@ class LedController:
     def update_next_colors(self):
         for y in range(self.y):
             for x in range(self.x):
-                self.col_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_dictionary[(y, x)][0])
-    
+                if self.count == 1:
+                    self.col_ac_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_dictionary[(y, x)][0])
+                else:
+                    self.col_bd_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_dictionary[(y, x)][0])
+
     def shift_led_image(self):
-        total_steps = 5  # Changeable
-        for step in range(total_steps + 1):
-            for y in range(self.y):
-                for x in range(self.x):
-                    pixel_index = self.pos_dictionary[(y, x)]
-                    color = self.interpolate_color(self.col_dictionary[(y, x)][0], self.col_dictionary[(y, x)][1], step, total_steps)
-                    self.strip.setPixelColor(pixel_index, Color(*color))
-            self.strip.show()
+          
+        if self.count == 1:
+            for stepone in range(self.total_steps + 1):
+                for y in range(self.y):
+                    for x in range(self.x):
+                        self.pixels[self.pos_dictionary[(y, x)]] = self.interpolate_color(self.col_ac_dictionary[(y, x)][0], self.col_sc_dictionary[(y, x)][1], stepone, self.total_steps)
+                self.pixels.show()
+
+        else:
+            for step in range(self.total_steps + 1):
+                for y in range(self.y):
+                    for x in range(self.x):
+                        self.pixels[self.pos_dictionary[(y, x)]] = self.interpolate_color(self.col_bd_dictionary[(y, x)][0], self.col_bd_dictionary[(y, x)][1], step, self.total_steps)
+                self.pixels.show()
     
     def interpolate_color(self, color2, color1, step, total_steps):
         r1, g1, b1 = color1
@@ -110,14 +133,15 @@ class LedController:
         self.led_thread.join()
         self.cap.release()
         cv2.destroyAllWindows()
-        self.strip.fill(0)  # Turn off LEDs
-        self.strip.show()
+        self.pixels.fill((0, 0, 0))
+        self.pixels.show()
 
 # Variables
 x = 64
 y = 32
 panel_size = 16
 cam_index = 0
+steps = 5
 
-led_controller = LedController(x, y, panel_size, cam_index)
+led_controller = LedController(x, y, panel_size, cam_index, steps)
 led_controller.run()
