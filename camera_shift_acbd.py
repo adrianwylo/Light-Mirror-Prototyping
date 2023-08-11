@@ -66,10 +66,10 @@ class LedController:
         self.capture_colors(frame)
         #do this twice to file up bd_dic with a copied frame
         self.update_next_colors()
+        self.camcount *= 1;
         self.update_next_colors()
         #waiting moment lol
         while True:
-            self.camcount *= -1
             #takin da picture (c) and do da rest
             ret, frame = self.cap.read()
             if not ret:
@@ -99,18 +99,19 @@ class LedController:
     def update_next_colors(self):
         for y in range(self.y):
             for x in range(self.x):
-                if self.count == 1:
-                    self.col_ac_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_dictionary[(y, x)][0])
+                if self.camcount == 1:
+                    self.col_ac_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_ac_dictionary[(y, x)][0])
                 else:
-                    self.col_bd_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_dictionary[(y, x)][0])
-
+                    self.col_bd_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_bd_dictionary[(y, x)][0])
+        self.camcount *= 1;
+    
     def shift_led_image(self):
           
-        if self.count == 1:
+        if self.showcount == 1:
             for stepone in range(self.total_steps + 1):
                 for y in range(self.y):
                     for x in range(self.x):
-                        self.pixels[self.pos_dictionary[(y, x)]] = self.interpolate_color(self.col_ac_dictionary[(y, x)][0], self.col_sc_dictionary[(y, x)][1], stepone, self.total_steps)
+                        self.pixels[self.pos_dictionary[(y, x)]] = self.interpolate_color(self.col_ac_dictionary[(y, x)][0], self.col_ac_dictionary[(y, x)][1], stepone, self.total_steps)
                 self.pixels.show()
 
         else:

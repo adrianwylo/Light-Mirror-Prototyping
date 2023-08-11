@@ -51,8 +51,6 @@ class LedController:
         
     def camera_thread_function(self):
         while True:
-            #add wait time
-            time.sleep(120)
             ret, frame = self.cap.read()
             if not ret:
                 print("Error capturing frame")
