@@ -85,23 +85,18 @@ class LedController:
             self.camera_ready.clear()
             
     def led_thread_function(self):
-        
         while True:
             self.camera_ready.wait()
             if self.cap_index_odd:
                 self.cap_index_odd = not self.cap_index_odd
                 self.led_ready.set()
+                self.shift_trans_led()
                 self.shift_led_image_ac()
             else:
                 self.cap_index_odd = not self.cap_index_odd
                 self.led_ready.set()
+                self.shift_trans_led()
                 self.shift_led_image_bd()
-            
-
-            
-            
-            
-            
 
     def capture_colors(self, frame):
         for y in range(self.y):
@@ -121,18 +116,75 @@ class LedController:
 
     def shift_led_image_ac(self):
         for stepone in range(self.total_steps + 1):
+            interpolated_colors = [
+                [
+                    self.interpolate_color(
+                        self.col_ac_dictionary[(y, x)][0],
+                        self.col_ac_dictionary[(y, x)][1],
+                        stepone,
+                        self.total_steps
+                    )
+                    for x in range(self.x)
+                ]
+                for y in range(self.y)
+            ]
+
             for y in range(self.y):
                 for x in range(self.x):
-                    self.pixels[self.pos_dictionary[(y, x)]] = self.interpolate_color(self.col_ac_dictionary[(y, x)][0], self.col_ac_dictionary[(y, x)][1], stepone, self.total_steps)
+                    self.pixels[self.pos_dictionary[(y, x)]] = interpolated_colors[y][x]
             self.pixels.show()
         
     def shift_led_image_bd(self):
         for step in range(self.total_steps + 1):
+            interpolated_colors = [
+                [
+                    self.interpolate_color(
+                        self.col_bd_dictionary[(y, x)][0],
+                        self.col_bd_dictionary[(y, x)][1],
+                        step,
+                        self.total_steps
+                    )
+                    for x in range(self.x)
+                ]
+                for y in range(self.y)
+            ]
+
             for y in range(self.y):
                 for x in range(self.x):
-                    self.pixels[self.pos_dictionary[(y, x)]] = self.interpolate_color(self.col_bd_dictionary[(y, x)][0], self.col_bd_dictionary[(y, x)][1], step, self.total_steps)
+                    self.pixels[self.pos_dictionary[(y, x)]] = interpolated_colors[y][x]
             self.pixels.show()
     
+    def shift_trans_led(self): #note the reversed signs cus of change or something
+        if self.cap_index:
+            for step in range(self.total_steps + 1):
+                interpolated_colors = [
+                    [
+                        self.interpolate_color(
+                            self.pixels[self.pos_dictionary[(y,x)]],
+                            self.col_bd_dictionary[(y,x)][0],
+                            step,
+                            self.total_steps
+                        )
+                        for x in range(self.x)
+                    ]
+                    for y in range(self.y)
+                ]
+        else:
+            for step in range(self.total_steps + 1):
+                interpolated_colors = [
+                    [
+                        self.interpolate_color(
+                            self.pixels[self.pos_dictionary[(y,x)]],
+                            self.col_ac_dictionary[(y,x)][0],
+                            step,
+                            self.total_steps
+                        )
+                        for x in range(self.x)
+                    ]
+                    for y in range(self.y)
+                ]
+
+
     def interpolate_color(self, color2, color1, step, total_steps):
         r1, g1, b1 = color1
         r2, g2, b2 = color2
