@@ -86,8 +86,9 @@ def show_led_image(frame):
             pixel_index = base_pixel + offset_amount
             
             # Set the NeoPixel color
-            pixels[pixel_index] = (int(r), int(g), int(b))
-        
+            # pixels[pixel_index] = (int(r), int(g), int(b))
+            pixels[pixel_index] = (int(g), int(r), int(b))
+            
     # Show the changed pixels on the NeoPixel display
     pixels.show()
 
@@ -95,7 +96,7 @@ def show_led_image(frame):
 
 
 # Define the desired pixel size (adjust as needed)
-pixel_size = 5
+pixel_size = 3
 
 # Load the image from a file
 image_path = "Example_Image.jpg"

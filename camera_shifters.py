@@ -22,8 +22,8 @@ def interpolate_color(color2, color1, step, total_steps):
 def update_next_colors(frame, c_dic, b, a):
     for y in range(b):
         for x in range(a):
-            b, g, r = frame[int(y), int(x)]
-            c_dic[(y, x)] = ((int(r), int(g), int(b)), (c_dic[(y, x)][0][0], c_dic[(y, x)][0][1], c_dic[(y, x)][0][2]))
+            r, g, b = frame[int(y), int(x)]
+            c_dic[(y, x)] = ((int(g), int(b), int(r)), (c_dic[(y, x)][0][0], c_dic[(y, x)][0][1], c_dic[(y, x)][0][2]))
 
 def create_mapping(my_dictionary, my_c_dictionary, b, a, panel_size):
     for y in range(b):

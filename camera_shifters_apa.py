@@ -42,7 +42,7 @@ def create_mapping(my_dictionary, my_c_dictionary, b, a, panel_size):
             my_c_dictionary[(y, x)] = ((0, 0, 0), (0, 0, 0))
 
 x = 32
-y = 32
+y = 16
 panel_size = 16
 cam_index = 0
 
