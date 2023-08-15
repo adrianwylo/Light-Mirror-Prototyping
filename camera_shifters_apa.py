@@ -1,15 +1,14 @@
 import cv2
 import board
-import apa102_pi as apa102
+from apa102_pi.driver import apa102
 
 def shift_led_image(c_dic, p_dic, b, a, pixels):
     total_steps = 20  # changeable
     for step in range(total_steps + 1):
         for y in range(b):
             for x in range(a):
-                pixels.set_pixel_rgb(p_dic[(y, x)], *interpolate_color(c_dic[(y, x)][0], c_dic[(y, x)][1], step, total_steps))
+                pixels.set_pixel_rgb(p_dic[(y, x)], interpolate_color(c_dic[(y, x)][0], c_dic[(y, x)][1], step, total_steps))
         pixels.show()
-        pixels.cleanup()
 
 def interpolate_color(color2, color1, step, total_steps):
     r1, g1, b1 = color1
@@ -17,7 +16,8 @@ def interpolate_color(color2, color1, step, total_steps):
     new_r = int(r1 + (step * (r2 - r1) / total_steps))
     new_g = int(g1 + (step * (g2 - g1) / total_steps))
     new_b = int(b1 + (step * (b2 - b1) / total_steps))
-    return new_r, new_g, new_b
+    
+    return (new_r<<16) + (new_g << 8) + new_b
 
 def update_next_colors(frame, c_dic, b, a):
     for y in range(b):
@@ -41,13 +41,13 @@ def create_mapping(my_dictionary, my_c_dictionary, b, a, panel_size):
             my_dictionary[(y, x)] = pixel_index
             my_c_dictionary[(y, x)] = ((0, 0, 0), (0, 0, 0))
 
-x = 64
+x = 32
 y = 32
 panel_size = 16
 cam_index = 0
 
 NUM_PIXELS = x * y
-pixels = apa102.APA102(num_led=NUM_PIXELS, data_pin=10, clock_pin=11, global_brightness=20)
+pixels = apa102.APA102(num_led=NUM_PIXELS, order='rgb')
 
 cap = cv2.VideoCapture(cam_index)
 
