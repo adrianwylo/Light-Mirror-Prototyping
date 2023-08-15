@@ -1,13 +1,13 @@
 import cv2
 import board
-import neopixel
-import numpy as np
+from apa102_pi.driver import apa102
+
 
 def show_led_image(frame, dictionary, b, a):
     for y in range(b):
             for x in range(a):
                 b, g, r = frame[int(y), int(x)]
-                pixels[dictionary[(y,x)]] = (int(r), int(g), int(b))
+                pixels.set_pixel_rgb(dictionary[(y,x)], r<<16 + g << 8 + b)
     pixels.show()
     
 def create_mapping(my_dictionary, b, a, panel_size):
@@ -36,7 +36,7 @@ cam_index = 0
 # Initialize the NeoPixel object
 NUM_PIXELS = x * y
 PIN = board.D18  # Choose the appropriate GPIO pin for your setup
-pixels = neopixel.NeoPixel(PIN, NUM_PIXELS, brightness=0.2, auto_write=False)
+pixels = apa102.APA102(num_led=NUM_PIXELS, order='rgb')
 
 # Open the video capture
 cap = cv2.VideoCapture(0) 
