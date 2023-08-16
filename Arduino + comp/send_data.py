@@ -28,17 +28,19 @@ def change_col(pixels, frame, dictionary, b, a):
                 pixels[dictionary[(y,x)]] = [int(r), int(g), int(b)]
 
 def serialize_pix(pixels): 
-    try:
-        serialized_data = msgpack.packb(pixels)
-        return serialized_data
-    except Exception as e:
-        print("couldnt serialize lol: ", e)
-        return None
+    # try:
+    #     serialized_data = msgpack.packb(pixels)
+    #     return serialized_data
+    # except Exception as e:
+    #     print("couldnt serialize lol: ", e)
+    #     return None
+    serialized_data = " ".join(str(value) for value in pixels)
+    return serialized_data
 
 def main():
     #Variables
-    x = 64
-    y = 32
+    x = 16
+    y = 16
     panel_size = 16
     cam_index = 0
     NUM_PIXELS = x * y
@@ -70,13 +72,22 @@ def main():
         change_col(pixels, frame, my_dictionary, y, x)
 
         # write to arduino 
-        ser.write(serialize_pix(pixels))
+        try:
+            serialized_pixels = serialize_pix(pixels)
+            ser.write(serialized_pixels.encode('utf-8'))
+            print("Sent")
+        except KeyboardInterrupt:
+            print("Exiting...")
+            ser.close()
 
-        # Check for the 'q' key to quit
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        print("sent")
+        response = ser.readline().decode('utf-8').strip()
+        if response == 'pong':
+            print("Received:", response)
+        else:
+            print("Received unexpected response:", response)
 
+        time.sleep(1)  # Wait for 1 second before sending the next ping
+        
     # Release the video capture and close the windows
     cap.release()
     cv2.destroyAllWindows()
