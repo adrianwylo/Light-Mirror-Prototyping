@@ -11,7 +11,7 @@ class LedController:
         self.total_steps = steps
         self.panel_size = panel_size
         self.cam_index = cam_index
-        self.cap_index = True
+        self.cap_index_odd = True
         self.NUM_PIXELS = x * y
         self.PIN = board.D18
         self.pixels = neopixel.NeoPixel(self.PIN, self.NUM_PIXELS, brightness=0.2, auto_write=False)
@@ -115,6 +115,7 @@ class LedController:
                 self.col_bd_dictionary[(y, x)] = (self.cap_dictionary[(y, x)], self.col_bd_dictionary[(y, x)][0])
 
     def shift_led_image_ac(self):
+        print("ac") 
         for stepone in range(self.total_steps + 1):
             interpolated_colors = [
                 [
@@ -135,6 +136,7 @@ class LedController:
             self.pixels.show()
         
     def shift_led_image_bd(self):
+        print("bd")
         for step in range(self.total_steps + 1):
             interpolated_colors = [
                 [
@@ -155,13 +157,15 @@ class LedController:
             self.pixels.show()
     
     def shift_trans_led(self): #note the reversed signs cus of change or something
-        if self.cap_index:
+        print("trans")
+        if self.cap_index_odd:
             for step in range(self.total_steps + 1):
                 interpolated_colors = [
                     [
                         self.interpolate_color(
+                            
+                            self.col_bd_dictionary[(y,x)][1],
                             self.pixels[self.pos_dictionary[(y,x)]],
-                            self.col_bd_dictionary[(y,x)][0],
                             step,
                             self.total_steps
                         )
@@ -174,8 +178,9 @@ class LedController:
                 interpolated_colors = [
                     [
                         self.interpolate_color(
+                            
+                            self.col_ac_dictionary[(y,x)][1],
                             self.pixels[self.pos_dictionary[(y,x)]],
-                            self.col_ac_dictionary[(y,x)][0],
                             step,
                             self.total_steps
                         )
@@ -206,7 +211,7 @@ x = 64
 y = 32
 panel_size = 16
 cam_index = 0
-steps = 5
+steps = 20
 
 led_controller = LedController(x, y, panel_size, cam_index, steps)
 led_controller.run()

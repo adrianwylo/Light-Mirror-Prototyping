@@ -9,6 +9,7 @@ def show_led_image(frame, dictionary, b, a):
                 b, g, r = frame[int(y), int(x)]
                 pixels.set_pixel_rgb(dictionary[(y,x)], r<<16 + g << 8 + b)
     pixels.show()
+    pixels.cleanup()
     
 def create_mapping(my_dictionary, b, a, panel_size):
     # make dictionary mapping
@@ -28,8 +29,8 @@ def create_mapping(my_dictionary, b, a, panel_size):
             my_dictionary[(y,x)] = pixel_index
 
 #Variables
-x = 64
-y = 32
+x = 32
+y = 16
 panel_size = 16
 cam_index = 0
 
@@ -56,7 +57,7 @@ while True:
 
     # Show the pixelated frame on the NeoPixel display
     show_led_image(frame, my_dictionary, y, x)
-
+    print("check")
     # Check for the 'q' key to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
