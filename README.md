@@ -1,1 +1,0 @@
-# Light-Mirror-Prototyping
