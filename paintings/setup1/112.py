@@ -2,20 +2,12 @@ import cv2
 import board
 import neopixel
 
-def shift_led_image(c_dic, p_dic, b, a, tilted):
-    total_steps = 5  # changeable
+def shift_led_image(c_dic, p_dic, b, a, total_steps):
     for step in range(total_steps + 1):
         for y in range(b):
             for x in range(a):
                 color = interpolate_color(c_dic[(y, x)][0], c_dic[(y, x)][1], step, total_steps)
-                if tilted == "left":
-                    pixels[p_dic[(b - x, y)]] = color
-                elif tilted == "right":
-                    pixels[p_dic[(x, a - y)]] = color
-                elif tilted == "up":
-                    pixels[p_dic[(b - y, a - x)]] = color
-                elif tilted == "down":
-                    pixels[p_dic[(y, x)]] = color
+                pixels[p_dic[(y, x)]] = color
     pixels.show()
 
 # helper Function to interpolate between two colors
@@ -46,26 +38,51 @@ def update_next_colors(frame, c_dic, b, a, tint_color):
             
             
 
-def create_mapping(mapping, color_bank, b, a, panel_size, display_mode):
+def create_mapping(mapping, color_bank, b, a, panel_size, display_mode, ):
+    y_indexes = [i for i in range(b)]
+    x_indexes = [j for j in range(a)]
+    #flips initial mapping
+    if display_mode == "normal":
+        x_indexes.sort(reverse=True)
+
     #base mapping
-    for y in range(b):
-        for x in range(a):
-            y_panel = int(y // panel_size)
-            x_panel = int(x // panel_size)
-            base_pixel = x_panel * (panel_size ** 2) * 2 + y_panel * (panel_size ** 2)
-            y_panel_offset = y % panel_size
-            x_panel_offset = x % panel_size
-            if x_panel_offset % 2 == 0:
-                offset_amount = x_panel_offset * panel_size + y_panel_offset
-            else:
-                offset_amount = (x_panel_offset + 1) * panel_size - 1 - y_panel_offset
-            pixel_index = base_pixel + offset_amount
-            if display_mode == "normal":
+    if tilted == "right":
+        
+    
+    elif tilted == "left":
+
+    elif tilted == "up":
+        for y in range(b):
+            for x in range(a):
+                y_panel = int(y // panel_size)
+                x_panel = int(x // panel_size)
+                base_pixel = x_panel * (panel_size ** 2) * 2 + y_panel * (panel_size ** 2)
+                y_panel_offset = y % panel_size
+                x_panel_offset = x % panel_size
+                if x_panel_offset % 2 == 0:
+                    offset_amount = x_panel_offset * panel_size + y_panel_offset
+                else:
+                    offset_amount = (x_panel_offset + 1) * panel_size - 1 - y_panel_offset
+                pixel_index = base_pixel + offset_amount
                 mapping[(y, b - x - 1)] = pixel_index
-            else:  #mirrored
-                mapping[(y, x)] = pixel_index
-            color_bank[(y, x)] = ((0, 0, 0), (0, 0, 0))
-                
+                color_bank[(y, x)] = ((0, 0, 0), (0, 0, 0))
+
+    else:
+        for y in range(b):
+            for x in range(a):
+                y_panel = int(y // panel_size)
+                x_panel = int(x // panel_size)
+                base_pixel = x_panel * (panel_size ** 2) * 2 + y_panel * (panel_size ** 2)
+                y_panel_offset = y % panel_size
+                x_panel_offset = x % panel_size
+                if x_panel_offset % 2 == 0:
+                    offset_amount = x_panel_offset * panel_size + y_panel_offset
+                else:
+                    offset_amount = (x_panel_offset + 1) * panel_size - 1 - y_panel_offset
+                pixel_index = base_pixel + offset_amount
+                mapping[(y, b - x - 1)] = pixel_index
+                color_bank[(y, x)] = ((0, 0, 0), (0, 0, 0))
+                    
 
 x = 16 #X dimension of panel
 y = 32 #Y dimension of panel
@@ -82,6 +99,8 @@ tint_color = (0, 255, 0) #Red
 PIN = board.D18 #pin 
 pixels = neopixel.NeoPixel(PIN, NUM_PIXELS, brightness=0.2, auto_write=False)
 
+total_steps = 5  # total step amount
+
 cap = cv2.VideoCapture(cam_index)
 
 pos_dictionary = {}
@@ -89,7 +108,7 @@ col_dictionary = {}
 
 #map coordinates to pixel 
 
-create_mapping(pos_dictionary, col_dictionary, y, x, panel_size, display_mode)
+create_mapping(pos_dictionary, col_dictionary, y, x, panel_size, display_mode, tilted)
 
 while True:
     #capture pic
@@ -98,14 +117,17 @@ while True:
         print("Capture error")
         break
 
-    # Resize cropped frame to match panel dimensions
-    frame = cv2.resize(frame, (x, y))
+    # Resize cropped frame to match panel dimensions (separate from matrix dimensions)
+    if tilted == "left" or tilted == "right":
+        frame = cv2.resize(frame, (y,x))
+    else:
+        frame = cv2.resize(frame, (x, y))
 
     #process frame
     update_next_colors(frame, col_dictionary, y, x, tint_color)
 
     #display
-    shift_led_image(col_dictionary, pos_dictionary, y, x, tilted)
+    shift_led_image(col_dictionary, pos_dictionary, y, x, total_steps)
     
 
 cap.release()
