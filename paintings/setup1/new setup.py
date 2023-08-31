@@ -103,7 +103,7 @@ while True:
         frame = cv2.resize(frame, (x, y))
 
     #process frame
-    update_next_colors(frame, col_dictionary, y, x, tint_color)
+    update_next_colors(frame, col_dictionary, y, x, tint_color, tint_on)
 
     #display
     shift_led_image(col_dictionary, pos_dictionary, y, x, total_steps)
